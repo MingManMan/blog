@@ -1,6 +1,6 @@
 #coding=utf-8
 from flask import Flask
-from flask import request,redirect
+from flask import request,redirect,abort
 app=Flask(__name__)
 @app.route('/')
 def index():
@@ -15,5 +15,9 @@ def my400():
 @app.route("/redir/<url>")
 def redir(url):
 	return redirect("http://"+url)
+
+@app.route("/get_user/<id>")
+def get_user(id):
+	abort(404)
 if __name__=='__main__':
 	app.run(debug=True)
