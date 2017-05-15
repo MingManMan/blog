@@ -9,5 +9,8 @@ def index():
 @app.route("/user/<name>")
 def user(name):
 	return "<h1>Hello,%s!"%name
+@app.route("/400/")
+def my400():
+	return '<h1>Bad Request</h1>',400
 if __name__=='__main__':
 	app.run(debug=True)
