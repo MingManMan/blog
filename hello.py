@@ -12,7 +12,7 @@ from wtforms.validators import Required
 import os
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate,MigrateCommand
-
+from flask_mail import Mail,Message
 
 basedir=os.path.abspath(os.path.dirname(__file__))
 app=Flask(__name__)
@@ -23,7 +23,7 @@ app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN']=True
 
 
 
-
+mail=Mail(app)
 db=SQLAlchemy(app)
 bootstrap=Bootstrap(app)
 moment=Moment(app)
@@ -55,6 +55,11 @@ class NameForm(Form):
 	name=StringField("What is your name?",validators=[Required()])
 	submit=SubmitField(u'提交')		
 
+def send_email(to,subject,template,**kwargs):
+	msg=Message(app.config['FLASKY_MAIL_SUBJECT_PREFIX']+subject,sender=app.config['FLASKY_MAIL_SENDER'],recipients=[to])
+	msg.body=render_template(template+'.txt',**kwargs)
+	msg.html=render_template(template+'.html',**kwargs)
+	mail.send(msg)
 
 @app.route('/',methods=['GET','POST'])
 def index():
@@ -65,6 +70,8 @@ def index():
 			user=User(username=form.name.data)
 			db.session.add(user)
 			session['known']=False
+			if app.config['FLASKY_ADMIN']:
+				send_email(app.config['FLASKY_ADMIN'],'New User','mail/new_user')
 		else:
 			session['known']=True
 		session['name']=form.name.data
@@ -75,5 +82,4 @@ def index():
 
 
 if __name__=='__main__':
-
 	manager.run()
