@@ -9,7 +9,7 @@ class Config:
     FLASKY_MAIL_SUBJECT_PREFIX = '[Flasky]'
     FLASKY_MAIL_SENDER = 'Flasky Admin<mark_ming@163.com>'
     FLASKY_ADMIN = 'mark_ming@163.com'
-
+    DEBUG_TB_INTERCEPT_REDIRECTS =False
     @staticmethod
     def init_app(app):
         pass
