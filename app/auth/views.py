@@ -60,11 +60,12 @@ def confirm(token):
 
 @auth.before_app_request
 def before_request():
-    if current_user.is_authenticated \
-            and not current_user.confirmed \
-            and request.endpoint[:5] != 'auth.' \
-            and request.endpoint != 'static':
-        return redirect(url_for('auth.unconfirmed'))
+    if current_user.is_authenticated:
+        current_user.ping()
+        if not current_user.confirmed \
+                and request.endpoint[:5] != 'auth.' \
+                and request.endpoint != 'static':
+            return redirect(url_for('auth.unconfirmed'))
 
 
 @auth.route('/unconfirmed')
@@ -135,21 +136,21 @@ def password_reset(token):
 @auth.route('/change-email', methods=['GET', 'POST'])
 @login_required
 def change_email_request():
-    form=ChangeEmailForm()
+    form = ChangeEmailForm()
     if form.validate_on_submit():
         if current_user.verify_password(form.password.data):
-            newmail=form.email.data
-            token=current_user.generate_change_email_token(newmail)
+            newmail = form.email.data
+            token = current_user.generate_change_email_token(newmail)
             send_email(newmail, 'Confirm you email address',
                        'auth/email/change_email', user=current_user, token=token)
             flash('An email has been sent to your new email address')
             return redirect(url_for('main.index'))
         else:
             flash('Invalid email or password.')
-    return render_template("auth/change_email.html",form=form)
+    return render_template("auth/change_email.html", form=form)
 
 
-@auth.route('/change-email/<token>',methods=['GET','POST'])
+@auth.route('/change-email/<token>', methods=['GET', 'POST'])
 @login_required
 def change_email(token):
     if current_user.change_email(token):

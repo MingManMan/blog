@@ -20,11 +20,13 @@ def test():
 	tests=unittest.TestLoader().discover('tests')
 	unittest.TextTestRunner(verbosity=2).run(tests)
 
+@manager.command
+def rebuild_db():
+    db.drop_all()
+    db.create_all()
+
 manager.add_command("shell", Shell(make_context=make_shell_context))
 manager.add_command('db', MigrateCommand)
-
- 
-
 
 if __name__ == '__main__':
     manager.run()
