@@ -44,6 +44,19 @@ class User(UserMixin, db.Model):
     	db.session.commit()
     	return True
 
+    def reset_password(self,token,new_password):
+    	s=Serializer(current_app.config['SECRET_KEY'])
+    	try:
+    		data=s.loads(token)
+    	except:
+    		return False
+    	if data.get('confirm')!=self.id:
+    		return False
+    	self.password=new_password
+    	db.session.add(self)
+    	#db.session.commit()
+    	return True
+    
     @property
     def password(self):
     	raise AttributeError('password is not a readable attribute')
