@@ -21,9 +21,10 @@ def test():
 	unittest.TextTestRunner(verbosity=2).run(tests)
 
 @manager.command
-def rebuild_db():
+def rebuild_db(): #重建数据库
     db.drop_all()
     db.create_all()
+    Role.insert_roles()
 
 manager.add_command("shell", Shell(make_context=make_shell_context))
 manager.add_command('db', MigrateCommand)
