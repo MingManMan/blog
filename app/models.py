@@ -41,8 +41,33 @@ class User(UserMixin, db.Model):
     		return False
     	self.confirmed=True
     	db.session.add(self)
-    	db.session.commit()
+    	#db.session.commit()
     	return True
+
+    def generate_change_email_token(self,newemail,expriation=3600):
+    	s=Serializer(current_app.config['SECRET_KEY'],expriation)
+    	return s.dumps({'email':newemail,'userid':self.id})
+
+    def change_email(self,token):
+		s=Serializer(current_app.config['SECRET_KEY'])
+		try:
+			data=s.loads(token)
+		except:
+			return False
+
+		if data.get('userid')!=self.id:
+			return False
+		
+		newemail=data.get('email')
+		if newemail is None:
+			return False
+		
+		if self.query.filter_by(email=newemail).first() is not None:
+			return False
+		
+		self.email=newemail
+		db.session.add(self)
+		return True
 
     def reset_password(self,token,new_password):
     	s=Serializer(current_app.config['SECRET_KEY'])
@@ -70,6 +95,6 @@ class User(UserMixin, db.Model):
     def __repr_(self):
         return "<User %r>" % self.username
 
-    @login_manager.user_loader
-    def load_user(user_id):
-    	return User.query.get(int(user_id))
+@login_manager.user_loader
+def load_user(user_id):
+	return User.query.get(int(user_id))
