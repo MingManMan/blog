@@ -109,23 +109,23 @@ class User(UserMixin, db.Model):
     
     @property
     def followed_posts(self):
-    	return Post.query.join(Follow,Follow.followed_id==Post.author_id).filter(Follow.follower_id==self.id)
+        return Post.query.join(Follow,Follow.followed_id==Post.author_id).filter(Follow.follower_id==self.id)
 
     def follow(self,user):
-    	if not self.is_following(user):
-    		f=Follow(follow=self,followed=user)
-    		db.session.add(f)
+        if not self.is_following(user):
+            f=Follow(follower=self,followed=user)
+            db.session.add(f)
 
     def unfollow(self,user):
-    	f=self.followed.filter_by(followed_id=user.id).first()
-    	if f:
-    		db.session.delete(f)
+        f=self.followed.filter_by(followed_id=user.id).first()
+        if f:
+            db.session.delete(f)
 
     def is_following(self,user):
-    	return self.followed.filter_by(followed_id=user.id).first() is not None
+        return self.followed.filter_by(followed_id=user.id).first() is not None
 
     def is_followed_by(self,user):
-    	return self.followers.filter_by(follower_id=user.id).first() is not None
+        return self.followers.filter_by(follower_id=user.id).first() is not None
 
 
     @staticmethod
@@ -236,8 +236,19 @@ class User(UserMixin, db.Model):
     def is_administrator(self):
         return self.can(Permission.ADMINISTER)
 
+    @staticmethod
+    def add_self_follows():
+        for user in User.query.all():
+            if not user.is_following(user):
+                user.follow(user)
+                db.session.add(user)
+                db.session.commit()
+
     def __init__(self,**kwargs):
         super(User, self).__init__(**kwargs)
+
+        self.follow(self)
+
         if self.role is None:
             if self.email==current_app.config['FLASKY_ADMIN']:
                 self.role=Role.query.filter_by(permissions=0xff).first()
