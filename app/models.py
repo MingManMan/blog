@@ -7,9 +7,10 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from flask_login import UserMixin, AnonymousUserMixin
 from . import login_manager
-from flask import current_app, request
+from flask import current_app, request,url_for
 from datetime import datetime
 from markdown import markdown
+from app.exceptions import ValidationError
 
 class Permission:
     FOLLOW = 0x01
@@ -27,6 +28,25 @@ class Comment(db.Model):
     disable=db.Column(db.Boolean)
     author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     post_id=db.Column(db.Integer,db.ForeignKey('posts.id'))
+
+    def to_json(self):
+        json_comment = {
+            'url': url_for('api.get_comment', id=self.id, _external=True),
+            'post': url_for('api.get_post', id=self.post_id, _external=True),
+            'body': self.body,
+            'body_html': self.body_html,
+            'timestamp': self.timestamp,
+            'author': url_for('api.get_user', id=self.author_id,
+                              _external=True),
+        }
+        return json_comment
+
+    @staticmethod
+    def from_json(json_comment):
+        body = json_comment.get('body')
+        if body is None or body == '':
+            raise ValidationError('comment does not have a body')
+        return Comment(body=body)
 
     @staticmethod
     def on_changed_body(target,value,oldvalue,initiator):
@@ -56,6 +76,12 @@ class Post(db.Model):
         allowed_tags=['a','abbr','acronym','b','blockquote','code','em','i','li','ol','pre','strong','ul','h1','h2','h3','p']
         target.body_html=bleach.linkify(bleach.clean( markdown(value,output_format='html'),tags=allowed_tags,strip=True))
 
+    @staticmethod
+    def from_json(json_post):
+        body=json_post.get('body')
+        if body is None or body=='':
+            raise ValidationError('post does not have a body.')
+        return Post(body=body)
 
     @staticmethod
     def generate_fake(count=100):
@@ -71,6 +97,17 @@ class Post(db.Model):
                      author=u)
             db.session.add(p)
             db.session.commit()
+    def to_json(self):
+        json_post={
+            'url':url_for('api.get_post',id=self.id,_external=True),
+            'body':self.body,
+            'body_html':self.body_html,
+            'timestamp':self.timestamp,
+            'author':url_for('api.get_user',id=self.author_id,_external=True),
+            'comments':url_for('api.get_post_comments',id=self.id,_external=True),
+            'comment_count':self.comments.count()
+        }
+        return json_post
 
 db.event.listen(Post.body,'set',Post.on_changed_body)
 
@@ -125,6 +162,32 @@ class User(UserMixin, db.Model):
     followers= db.relationship('Follow',foreign_keys=[Follow.followed_id],backref=db.backref('followed',lazy='joined'),lazy='dynamic',cascade='all,delete-orphan')
     comments=db.relationship('Comment',backref='author',lazy='dynamic')
     
+
+    def to_json(self):
+        json_user={
+            'url':url_for('api.get_post',id=self.id,_external=True),
+            'username':self.username,
+            'member_since':self.member_since,
+            'last_see':self.last_see,
+            'posts':url_for('api.get_user_posts',id=self.id,_external=True),
+            'followed_posts':url_for('api.get_user_followed_posts',id=self.id,_external=True),
+            'post_count':self.posts.count()
+        }
+        return json_user
+
+    def generate_auth_token(self,expiration):
+        s=Serializer(current_app.config['SECRET_KEY'],expires_in=expiration)
+        return s.dumps({'id':self.id})
+    @staticmethod
+    def verify_auth_token(token):
+        s=Serializer(current_app.config['SECRET_KEY'])
+        try:
+            data=s.loads(token)
+        except:
+            return None
+        return User.Query.get(data['id'])
+
+
     @property
     def followed_posts(self):
         return Post.query.join(Follow,Follow.followed_id==Post.author_id).filter(Follow.follower_id==self.id)
@@ -273,7 +336,7 @@ class User(UserMixin, db.Model):
         if self.email is not None and self.avatar_hash is None:
             self.avatar_hash=hashlib.md5(self.email.encode('utf-8')).hexdigest()
         self.follow(self)
-        
+
 class AnonymousUser(AnonymousUserMixin):
     def can(self,permissions):
         return False

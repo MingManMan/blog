@@ -5,12 +5,14 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 class Config:
     CSRF_ENABLED = True
     SECRET_KEY = 'you-will-never-guess'
-    SQLALCHEMY_COMMIT_ON_TEARDOWN = True
+    #SQLALCHEMY_COMMIT_ON_TEARDOWN = True
+    SQLALCHEMY_TRACK_MODIFICATIONS=True
     FLASKY_MAIL_SUBJECT_PREFIX = '[Flasky]'
     FLASKY_MAIL_SENDER = 'Flasky Admin<mark_ming@163.com>'
     FLASKY_ADMIN = 'mark_ming@163.com'
     DEBUG_TB_INTERCEPT_REDIRECTS =False
     FLASKY_POSTS_PER_PAGE=10
+    FLASKY_COMMENTS_PER_PAGE=10
     @staticmethod
     def init_app(app):
         pass

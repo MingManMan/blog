@@ -13,6 +13,7 @@ from ..decorators import admin_required,permission_required
 
 @main.route("/", methods=['GET', 'POST'])
 def index():
+    current_app.logger.debug('This is a debug info.')
     form = PostForm()
     if current_user.can(Permission.WRITE_ARTICLES) and form.validate_on_submit():
         post = Post(body=form.body.data,
@@ -189,7 +190,7 @@ def moderate_enable(id):
     db.session.add(comment)
     return redirect(url_for('.moderate',
                             page=request.args.get('page', 1, type=int)))
-    
+
 @main.route('/moderate/disable/<int:id>')
 @login_required
 @permission_required(Permission.MODERATE_COMMENTS)
