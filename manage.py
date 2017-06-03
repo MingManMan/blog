@@ -16,9 +16,9 @@ def make_shell_context():
 
 @manager.command
 def test():
-	import unittest
-	tests=unittest.TestLoader().discover('tests')
-	unittest.TextTestRunner(verbosity=2).run(tests)
+    import unittest
+    tests=unittest.TestLoader().discover('tests')
+    unittest.TextTestRunner(verbosity=2).run(tests)
 
 @manager.command
 def rebuild_db(): #重建数据库
