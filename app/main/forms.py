@@ -45,5 +45,8 @@ class PostForm(Form):
     body=PageDownField("What's on your mind?",validators=[Required()])
     submit=SubmitField('Submit')
 
-
-        
+class CommentForm(Form):
+    """docstring for CommentForm"""
+    body=StringField('',validators=[Required()])
+    submit=SubmitField('Submit')
+    
